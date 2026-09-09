@@ -74,6 +74,7 @@
 #include "unit_manager.h"
 #include "unittype.h"
 #include "upgrade.h"
+#include "util.h"
 #include "version.h"
 #include "video.h"
 

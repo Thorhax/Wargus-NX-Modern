@@ -1,139 +1,105 @@
-# Stratagus port for PS Vita
+# Wargus NX Modern (Nintendo Switch Port)
 
-## Install
+[![Support me on Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/thorhax)
+[![GitHub Release](https://img.shields.io/github/v/release/Thorhax/Wargus-NX-Modern?include_prereleases&color=blue)](https://github.com/Thorhax/Wargus-NX-Modern/releases)
 
-Wargus/War1gus requires extracted Warcraft 1/2 data in order to play the game.
+Modern Nintendo Switch port of **Wargus** (Warcraft II) and **War1gus** (Warcraft: Orcs & Humans) running on the Stratagus RTS engine.
 
-So basically you'll have to install Wargus/War1gus on your PC, extract game data from original discs or GoG version and once you have a working PC version, you'll have to copy extracted game data to your Vita.
+Based on **Stratagus v3.3.2** with handheld controller and touchscreen support inspired by Northfear's Vita port, updated for Nintendo Switch libnx and devkitPro.
 
-### Steps:
+---
 
-1. Download and install stratagus.vpk. Extract content of stratagus_data.zip into `ux0:data/`.
+## Installation & Setup
 
-    https://github.com/Northfear/stratagus-vita/releases
+Wargus requires extracted game data from an original retail CD or GOG version of **Warcraft II: Tides of Darkness / Beyond the Dark Portal** (or Warcraft 1 for War1gus).
 
-2. Download Wargus/War1gus and install it to your PC (Make sure that you're using the SAME version for both Vita and PC, since version mismatch may cause problems)
+### 1. Extract Game Data on PC
+1. Download the official Wargus 3.3.2 release for your PC (Windows/Linux/macOS):
+   - [Wargus Releases](https://github.com/Wargus/wargus/releases) (v3.3.2 recommended)
+   - [War1gus Releases](https://github.com/Wargus/war1gus/releases) (if playing Warcraft I)
+2. Run the installer / setup on your PC and point it to your Warcraft II CD / GOG directory to extract and convert the game data (graphics, sounds, music, videos).
+3. Verify that the PC game runs and generates the data folders.
 
-    https://github.com/Wargus/wargus/releases/
+### 2. Copy Data to SD Card
+1. Download `wargus.nro` from the [Releases](https://github.com/Thorhax/Wargus-NX-Modern/releases) page.
+2. Place `wargus.nro` onto your SD card at:
+   - `sdmc:/switch/wargus/wargus.nro`
+3. Copy the extracted data folders from your PC into `sdmc:/switch/wargus/`:
+   - `campaigns/`
+   - `graphics/`
+   - `maps/`
+   - `music/`
+   - `sounds/`
+   - `videos/`
+   - `scripts/wc2-config.lua` (into `sdmc:/switch/wargus/scripts/wc2-config.lua`)
+4. *(Optional for War1gus)*: If playing Warcraft 1, place files in `sdmc:/switch/war1gus/` with `scripts/wc1-config.lua`.
 
-    https://github.com/Wargus/war1gus/releases/
+### 3. Launch
+Launch `wargus.nro` from the Homebrew Menu (launch via title override/holding R on any installed game recommended for full RAM access).
 
-(You may need to disable antivirus during Wargus installation, since it may break ecoding process in some cases)
+---
 
-3. On the first launch you will be asked for a copy of the original Warcraft 1/2. Select the path to the game or GoG installer and wait until installer extracts/encodes the data.
+## Controls
 
-4. Once the data is extracted and you have a working PC installation of Wargus/War1gus, it's time to copy the game data to Vita.
+| Switch Button | Action |
+| --- | --- |
+| **Left Analog Stick** | Move Cursor / Pointer |
+| **Right Analog Stick** | Scroll Map |
+| **A** | Left Mouse Button (Select, Confirm, Order) |
+| **B** | Right Mouse Button (Cancel, Move / Attack order) |
+| **Y** | Attack command |
+| **X** | Stop command |
+| **D-Pad (Up / Right / Down / Left)** | Select Control Group 1, 2, 3, 4 |
+| **L + D-Pad** | Assign Control Group 1, 2, 3, 4 (Ctrl + 1..4) |
+| **R (Hold)** | Fast Cursor Movement / Shift modifier |
+| **Plus (+)** | Escape / In-game Menu |
+| **Minus (-)** | F10 / Options Menu |
+| **Touchscreen** | Direct cursor tap and drag selection |
 
-If you were using portable version of Wargus/War1gus, then the extracted data should be in the installation folder. Otherwise the game data should be located at `Documents\Stratagus\data.Wargus` or `Documents\Stratagus\data.War1gus` (for Windows versions).
+### Preferences
+You can adjust controller pointer speed and bilinear filtering by editing:
+`sdmc:/switch/wargus/wc2/preferences.lua`
+- `ControllerSpeed`: Adjust cursor movement speed (default: `1400`)
+- `BilinearFilter`: Set to `true` or `false` for scaling filter
 
-Copy `campaigns`, `graphics`, `maps`, `music`, `sounds` and `videos` from Wargus/War1gus data folders and paste them into `ux0:data/Wargus/` for Wargus or into `ux0:data/War1gus/` for War1gus.
+---
 
-Copy `scripts/wc2-config.lua` for Wargus or `scripts/wc1-config.lua` for War1gus and paste the file into `ux0:data/Wargus/scripts/`/`ux0:data/War1gus/scripts/`.
+## Building from Source
 
-5. Start the game.
+Build requires [devkitPro](https://devkitpro.org/) with `devkitA64` and `switch-portlibs`.
 
-## Building
-
-### Prerequisites
-- VitaSDK
-- SDL2
-- SDL2-image
-- SDL2-mixer
-- Lua 5.1.5
-- Tolua++
-- Theora (optional)
-- OpenMP (optional)
-
-### Build
+```bash
+# Using Docker with devkitpro/devkita64:
+docker run --rm -v $(pwd):/work -w /work devkitpro/devkita64:latest bash -c "
+    source /opt/devkitpro/switchvars.sh && \
+    mkdir -p build && cd build && \
+    cmake .. -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/cmake/Switch.cmake \
+             -DENABLE_STATIC=ON \
+             -DENABLE_USEGAMEDIR=ON \
+             -DEAGER_LOAD=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DWITH_OPENMP=OFF && \
+    make -j\$(nproc)
+"
 ```
-mkdir build && cd build
-export SDLDIR=$VITASDK/arm-vita-eabi/
-cmake .. -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake -DENABLE_STATIC=ON -DENABLE_USEGAMEDIR=ON -DEAGER_LOAD=ON -DCMAKE_BUILD_TYPE=None
-make
-```
+The output executable `wargus.nro` will be in `build/`.
 
-## Port info
+---
 
-### Controls
+## Support & Donations
 
-- Left analog stick - Cursor movement
-- Right analog stick - Map scrolling
-- × - Left mouse button
-- ○ - Right mouse button
-- □ - Attack
-- △ - Stop
-- D-Pad Up/Right/Down/Left - 1/2/3/4 button
-- L1 - Ctrl
-- R1 - Shift (also used for cursor movement speedup)
-- SELECT - F10
-- START - Esc
+If you enjoy this port and want to support future Nintendo Switch homebrew ports and updates, consider donating:
 
-Use L1 + D-Pad to create teams (1-4) and D-Pad to select them (same as Ctrl + 1-4 on keyboard).
+[![Support me on Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/thorhax)
 
-You can change cursor movement speed by editing `ux0:data/Wargus/wc2/preferences.lua`/`ux0:data/War1gus/wc1/preferences.lua` and changing `ControllerSpeed` option (you may need to change some game options first for this file to appear).
+---
 
-### Additional info
+## Credits & License
 
-You may have to reinstall data files (Install steps 2-4) after the Stratagus update.
+- **Stratagus RTS Engine Team**: [Stratagus](https://github.com/Wargus/stratagus)
+- **Wargus & War1gus Team**: [Wargus](https://github.com/Wargus/wargus)
+- **Northfear**: For the incredible PS Vita port and gamepad/touch integration foundation ([stratagus-vita](https://github.com/Northfear/stratagus-vita))
+- **devkitPro & libnx contributors**: Bare-metal Nintendo Switch toolchain and libraries
+- **Thorhax**: Modern Nintendo Switch port, build system integration, and updates
 
-Multiplayer is not supported on PS Vita.
-
-Game startup/loading times are around 1-2 minutes for Wargus.
-
-Use the `legacy` fog of war, since it's much faster (should be on by default if you haven't replaced `scripts` folder).
-
-Auto-cast with mages can cause pretty big slowdowns in War1gus (probably in Wargus too). No performance problems with auto healing and clerics tho.
-
-You can turn on bilinear filtering by editing `ux0:data/Wargus/wc2/preferences.lua`/`ux0:data/War1gus/wc1/preferences.lua` and changing `BilinearFilter` option to `true`.
-
-    _______________________________________________________________________
-         _________ __                 __                               
-        /   _____//  |_____________ _/  |______     ____  __ __  ______
-        \_____  \\   __\_  __ \__  \\   __\__  \   / ___\|  |  \/  ___/
-        /        \|  |  |  | \// __ \|  |  / __ \_/ /_/  >  |  /\___ | 
-       /_______  /|__|  |__|  (____  /__| (____  /\___  /|____//____  >
-               \/                  \/          \//_____/            \/ 
-    ______________________                           ______________________
-                          T H E   W A R   B E G I N S
-           Stratagus - A free fantasy real time strategy game engine
-
-[![Join the chat at https://gitter.im/Wargus](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Wargus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-[![Discord](https://img.shields.io/discord/780082494447288340?style=flat-square&logo=discord&label=discord)](https://discord.gg/dQGxaw3QfB)
-
-Windows: <a href="https://ci.appveyor.com/project/timfel/stratagus"><img width="100" src="https://ci.appveyor.com/api/projects/status/github/Wargus/stratagus?branch=master&svg=true"></a>
-
-Linux & OSX: [![Build Status](https://travis-ci.org/Wargus/stratagus.svg?branch=master)](https://travis-ci.org/Wargus/stratagus)
-
-For Mac OS X, Stratagus comes bundled in the app bundles for Wargus, Stargus, and War1gus:
-  - Wargus: https://github.com/Wargus/stratagus/wiki/osx/Wargus.app.tar.gz
-  - War1gus: https://github.com/Wargus/stratagus/wiki/osx/War1gus.app.tar.gz
-  - Stargus: https://github.com/Wargus/stratagus/wiki/osx/Stargus.app.tar.gz
-
-On Ubuntu/Debian, you probably want the deb packages:
-  - https://launchpad.net/~stratagus/+archive/ubuntu/ppa
-  - Note that the game packages you probably want are `wargus`, `war1gus`, and `stargus`
-
-For Windows, you likely want the game installers:
-  - Wargus: https://github.com/Wargus/wargus/releases
-  - War1gus: https://github.com/Wargus/war1gus/releases
-  - Stargus: https://github.com/Wargus/stargus/releases
-
-If you do indeed need the Stratagus engine itself, nightly builds are available:
-  - Windows Installer: https://github.com/Wargus/stratagus/releases/tag/master-builds
-  - Ubuntu/Debian Packages: https://launchpad.net/~stratagus/+archive/ubuntu/ppa
-  
-### Contributing
-
-If you want to contribute, there is a video that details how to set up a development environment on Windows using VSCode here: https://youtu.be/c1Zm7tt_QtQ 
-
-Read 'doc/index.html' for general information and license information.
-Read 'doc/install.html' for Stratagus installation instructions.
-Read 'doc/changelog.html' for the Stratagus changelog.
-
-The Mac and Windows builds are done on Appveyor and Travis. The Ubuntu packages
-are built on Launchpad:
-  - https://code.launchpad.net/~stratagus/+recipe/stratagus-github
-  - https://code.launchpad.net/~stratagus/+recipe/war1gus-github
-  - https://code.launchpad.net/~stratagus/+recipe/stargus-github
-  - https://code.launchpad.net/~stratagus/+recipe/wargus-github
+Licensed under the **GNU General Public License v2.0** (GPL-2.0). See [COPYING](COPYING) for details.

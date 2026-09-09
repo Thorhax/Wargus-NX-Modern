@@ -141,7 +141,7 @@ namespace gcn
           case SDL_TEXTINPUT:
               {
                   char* text = event.text.text;
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
                     // clear text field first in the most stupid way possible
                     for (int32_t i = 0; i < 32; ++i) {
                         SDL_Keysym keysym;

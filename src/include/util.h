@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <string>
+#include <string.h>
 
 /*----------------------------------------------------------------------------
 --  Random

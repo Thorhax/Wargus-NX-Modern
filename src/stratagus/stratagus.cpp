@@ -294,6 +294,24 @@ void VitaSetGamePath()
 }
 #endif
 
+#ifdef __SWITCH__
+#include <unistd.h>
+void SwitchSetGamePath()
+{
+	if (access("sdmc:/switch/wargus/scripts/wc2-config.lua", F_OK) == 0 ||
+	    access("sdmc:/switch/wargus/scripts/stratagus.lua", F_OK) == 0) {
+		StratagusLibPath = "sdmc:/switch/wargus";
+	} else if (access("sdmc:/switch/war1gus/scripts/wc1-config.lua", F_OK) == 0) {
+		StratagusLibPath = "sdmc:/switch/war1gus";
+	} else if (access("data/scripts/wc2-config.lua", F_OK) == 0 ||
+	           access("scripts/wc2-config.lua", F_OK) == 0) {
+		StratagusLibPath = ".";
+	} else {
+		StratagusLibPath = "sdmc:/switch/wargus";
+	}
+}
+#endif
+
 /*----------------------------------------------------------------------------
 --  Variables
 ----------------------------------------------------------------------------*/
@@ -506,6 +524,15 @@ void ExitFatal(int err)
 	print_backtrace();
 #endif
 
+#ifdef __SWITCH__
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+							"Wargus Initialization Error",
+							"Wargus requires extracted Warcraft II game data.\n"
+							"Please copy your game data files to /switch/wargus/\n"
+							"(or /switch/war1gus/ for Warcraft I).\n"
+							"See instructions at https://github.com/Thorhax/Wargus-NX-Modern",
+							NULL);
+#endif
 #ifdef __vita__
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
 							"Error during initialization.",
@@ -780,7 +807,9 @@ int stratagusMain(int argc, char **argv)
 	SetupConsole();
 #endif
 	//  Setup some defaults.
-#ifdef __vita__
+#ifdef __SWITCH__
+	SwitchSetGamePath();
+#elif defined(__vita__)
 	scePowerSetArmClockFrequency(444);
 	scePowerSetBusClockFrequency(222);
 	scePowerSetGpuClockFrequency(222);

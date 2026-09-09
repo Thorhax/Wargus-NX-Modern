@@ -232,7 +232,7 @@ namespace gcn
 
         virtual void mousePress(int x, int y, int button);
 
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
         virtual void gotFocus();
         virtual void lostFocus();
 #endif

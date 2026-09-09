@@ -68,7 +68,10 @@ extern SDL_Texture *TheTexture;
 #define AMASK   0x000000ff
 #endif
 
-#ifdef __vita__
+#if defined(__SWITCH__)
+#define VITA_FULLSCREEN_WIDTH 1280
+#define VITA_FULLSCREEN_HEIGHT 720
+#elif defined(__vita__)
 #define VITA_FULLSCREEN_WIDTH 960
 #define VITA_FULLSCREEN_HEIGHT 544
 #endif
@@ -405,7 +408,7 @@ public:
 	SDL_Cursor *blankCursor;
 	int Depth;
 	bool FullScreen;
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
 	void SetVitaRenderArea();
 	void SetTextInput(bool active);
 	SDL_Rect RenderRect;

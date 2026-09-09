@@ -2175,7 +2175,7 @@ static int CclRestartStratagus(lua_State *l)
 	argv[newArgc - 1] = (char *)0;
 #ifdef WIN32
 	_execv(executable_path, argv);
-#elif !defined(__vita__)
+#elif !defined(__vita__) && !defined(__SWITCH__)
 	execvp(executable_path, argv);
 #endif
 	delete[] argv;

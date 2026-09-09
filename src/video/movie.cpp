@@ -344,7 +344,7 @@ int PlayMovie(const std::string &name)
 		rect.y = 0;
 	}
 
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
 	rect.x = (VITA_FULLSCREEN_WIDTH - rect.w) / 2;
 	rect.y = (VITA_FULLSCREEN_HEIGHT - rect.h) / 2;
 #endif

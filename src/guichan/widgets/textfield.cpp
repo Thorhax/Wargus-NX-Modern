@@ -62,7 +62,7 @@
 #include "guichan/exception.h"
 #include "util.h"
 
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
 #include "video.h"
 #endif
 
@@ -483,7 +483,7 @@ namespace gcn
         fixScroll();
     }
 
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
     void TextField::gotFocus()
     {
         Widget::gotFocus();

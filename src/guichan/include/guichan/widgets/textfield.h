@@ -162,7 +162,7 @@ namespace gcn
 
         virtual bool keyPress(const Key& key);
 
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
         virtual void gotFocus();
         virtual void lostFocus();
 #endif

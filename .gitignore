@@ -30,6 +30,7 @@ obj-*
 ./stratagus.suo
 ./tolua.cpp
 ./tolua.cpp.rule
+src/tolua.cpp
 build
 build_linux
 .vscode/*

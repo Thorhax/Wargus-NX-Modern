@@ -48,14 +48,14 @@
 # include <sys/time.h>
 # include <unistd.h>
 # include <netinet/in.h>
+# include <arpa/inet.h>
 # include <netdb.h>
 # include <sys/socket.h>
-# ifndef __vita__
+# if !defined(__vita__) && !defined(__SWITCH__)
 # include <sys/ioctl.h>
 # include <ifaddrs.h>
 # ifndef __BEOS__
 #  include <net/if.h>
-#  include <arpa/inet.h>
 # endif
 # endif
 # define INVALID_SOCKET -1

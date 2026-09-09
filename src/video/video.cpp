@@ -259,7 +259,7 @@ void CVideo::ClearScreen()
 	FillRectangle(ColorBlack, 0, 0, Video.Width, Video.Height);
 }
 
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
 void CVideo::SetVitaRenderArea()
 {
 	RenderRect.x = 0;
@@ -328,11 +328,11 @@ bool CVideo::ResizeScreen(int w, int h)
 	Width = w;
 	Height = h;
 
-#ifndef __vita__
+#if !defined(__vita__) && !defined(__SWITCH__)
 	SDL_RenderSetLogicalSize(TheRenderer, w, h * VerticalPixelSize);
 #endif
 
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, BilinearFilter ? "1" : "0");
 #endif
 
@@ -358,7 +358,7 @@ bool CVideo::ResizeScreen(int w, int h)
 
 	SetClipping(0, 0, w - 1, h - 1);
 
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
 	SetVitaRenderArea();
 #endif
 	return true;

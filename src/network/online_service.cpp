@@ -56,7 +56,7 @@
 
 #include "./xsha1.h"
 
-#ifdef __vita__
+#if defined(__vita__) || defined(__SWITCH__)
 #define StratagusLastModifiedDate "02/22/2022"
 #define StratagusLastModifiedTime "22:22:22"
 #endif

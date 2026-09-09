@@ -661,13 +661,20 @@ if(VITA)
 	set (LUA_INCLUDE_DIR ${VITASDK}/arm-vita-eabi/include/lua)
 endif()
 
+if(CMAKE_SYSTEM_NAME MATCHES "NintendoSwitch" OR SWITCH)
+	set(SWITCH TRUE)
+	add_definitions(-D__SWITCH__ -D_GNU_SOURCE)
+	set(LUA_INCLUDE_DIR ${DEVKITPRO}/portlibs/switch/include/lua5.1)
+	set(LUA_LIBRARIES ${DEVKITPRO}/portlibs/switch/lib/liblua5.1.a)
+endif()
+
 if(APPLE)
 	list(APPEND CMAKE_PREFIX_PATH /opt/homebrew/)
 endif()
 
 if(NOT WIN32 OR NOT MSVC)
 	include(CheckCXXSourceCompiles)
-	if(VITA)
+	if(VITA OR SWITCH)
 		set(FS_SRC "
 		#include <filesystem> 
 		namespace fs = std::filesystem;
@@ -736,6 +743,72 @@ if(BUILD_VENDORED_LUA)
 	set(TOLUA++_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/libtoluapp51.a")
 	set(TOLUA++_APP "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/toluapp")
   endif(MSVC)
+elseif(SWITCH)
+  set(Lua51_FOUND true)
+  set(TOLUA++_FOUND true)
+  set(TOLUA++_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple)
+  set(toluapp_simple_SRCS
+      ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua_event.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua_is.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua_map.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua_push.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua_to.c
+  )
+  add_library(toluapp51 STATIC ${toluapp_simple_SRCS})
+  target_include_directories(toluapp51 PUBLIC
+      ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple
+      ${LUA_INCLUDE_DIR}
+  )
+  set(TOLUA++_LIBRARY toluapp51)
+
+  if(NOT TOLUA++_APP)
+      set(HOST_TOLUAPP "${CMAKE_BINARY_DIR}/tools/toluapp")
+      add_custom_command(
+          OUTPUT "${HOST_TOLUAPP}"
+          COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/tools"
+          COMMAND gcc -O2 -I${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/toluabind.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua_event.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua_is.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua_map.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua_push.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/toluapp-simple/tolua_to.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lapi.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lcode.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/ldebug.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/ldo.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/ldump.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lfunc.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lgc.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/llex.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lmem.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lobject.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lopcodes.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lparser.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lstate.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lstring.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/ltable.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/ltm.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lundump.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lvm.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lzio.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lauxlib.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lbaselib.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/ldblib.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/liolib.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lmathlib.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/loslib.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/ltablib.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/lstrlib.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/loadlib.c
+              ${CMAKE_CURRENT_SOURCE_DIR}/third-party/lua-5.1.5/src/linit.c
+              -lm -ldl -o "${HOST_TOLUAPP}"
+          COMMENT "Building host toluapp"
+          VERBATIM
+      )
+      set(TOLUA++_APP "${HOST_TOLUAPP}")
+  endif()
 else()
   find_package(Lua51 REQUIRED)
   find_package(Tolua++ REQUIRED)
@@ -949,6 +1022,34 @@ if(VITA)
 		SceHid_stub
 		SceTouch_stub
 		SceMotion_stub
+	)
+endif()
+
+if(SWITCH)
+	set(SWITCH_FLAGS "-O2 -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -D__SWITCH__ -D_GNU_SOURCE -DNDEBUG")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SWITCH_FLAGS}")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SWITCH_FLAGS}")
+	set(stratagus_LIBS ${stratagus_LIBS}
+		SDL2_image
+		SDL2_mixer
+		SDL2
+		png16
+		jpeg
+		webp
+		theora
+		vorbisfile
+		vorbis
+		ogg
+		modplug
+		mpg123
+		opusfile
+		opus
+		EGL
+		glapi
+		drm_nouveau
+		nx
+		z
+		m
 	)
 endif()
 
@@ -1222,7 +1323,7 @@ endif()
 
 add_custom_command(OUTPUT tolua.cpp
 	COMMAND ${TOLUA++_APP} ARGS -L stratagus.lua -o ${CMAKE_CURRENT_BINARY_DIR}/tolua.cpp stratagus.pkg
-	DEPENDS ${tolua_FILES}
+	DEPENDS ${tolua_FILES} ${TOLUA++_APP}
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/tolua
 	VERBATIM
 )
@@ -1236,7 +1337,7 @@ target_link_libraries(stratagus ${stratagus_LIBS})
 
 if(OpenMP_CXX_FOUND)
 	add_definitions(-DUSE_OPENMP)
-	if(NOT VITA)
+	if(NOT VITA AND NOT SWITCH)
 		target_compile_options(stratagus PRIVATE ${OpenMP_CXX_FLAGS})
 		target_link_libraries(stratagus OpenMP::OpenMP_CXX)
 	endif()
@@ -1415,4 +1516,19 @@ endif()
 
 if(VITA)
     include("${CMAKE_SOURCE_DIR}/vita/vita.cmake")
+endif()
+
+if(SWITCH)
+    nx_generate_nacp(
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/wargus.nacp"
+        NAME "Wargus"
+        AUTHOR "Thorhax"
+        VERSION "${STRATAGUS_VERSION}"
+    )
+    nx_create_nro(wargus
+        TARGET stratagus
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/wargus.nro"
+        NACP "${CMAKE_CURRENT_BINARY_DIR}/wargus.nacp"
+        ICON "${CMAKE_CURRENT_SOURCE_DIR}/switch_icon.png"
+    )
 endif()

@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #endif
 
 #ifdef __cplusplus
@@ -64,6 +65,17 @@ static struct in6_addr in6addr_any;
 #define IPV6_MULTICAST_LOOP 0
 #define IPV6_JOIN_GROUP 0
 #define IPV6_MULTICAST_IF 0
+#endif
+
+#ifdef __SWITCH__
+struct ipv6_mreq
+{
+	/* IPv6 multicast address of group */
+	struct in6_addr ipv6mr_multiaddr;
+
+	/* local interface */
+	unsigned int ipv6mr_interface;
+};
 #endif
 
 enum mdns_record_type {
