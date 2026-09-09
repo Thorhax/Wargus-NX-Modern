@@ -114,7 +114,7 @@ uint32_t SDL_CUSTOM_KEY_UP;
 
 #if defined(__vita__) || defined(__SWITCH__)
 // used to convert user-friendly pointer speed values into more useable ones
-const double CONTROLLER_SPEED_MOD = 2000000.0;
+const double CONTROLLER_SPEED_MOD = 1000000.0;
 // bigger value correndsponds to faster pointer movement speed with bigger stick axis values
 const double CONTROLLER_AXIS_SPEEDUP = 1.03;
 
@@ -407,7 +407,17 @@ void InitVideoSdl()
 	setDpiAware();
 
 	// Sam said: better for windows.
-	/* SDL_HWSURFACE|SDL_HWPALETTE | */
+#if defined(__SWITCH__)
+	Video.FullScreen = true;
+	VideoForceFullScreen = 1;
+	Video.WindowWidth = 1280;
+	Video.WindowHeight = 720;
+	if (!Video.Width || !Video.Height) {
+		Video.Width = 1280;
+		Video.Height = 720;
+	}
+	flags |= SDL_WINDOW_FULLSCREEN;
+#else
 	if (Video.FullScreen) {
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	} else {
@@ -422,6 +432,12 @@ void InitVideoSdl()
 	if (!Video.WindowWidth || !Video.WindowHeight) {
 		Video.WindowWidth = Video.Width;
 		Video.WindowHeight = Video.Height;
+	}
+#endif
+
+	if (!Video.Width || !Video.Height) {
+		Video.Width = 640;
+		Video.Height = 480;
 	}
 
 	if (!Video.Depth) {
@@ -535,7 +551,11 @@ void InitVideoSdl()
 		}
 
 #endif
+#if defined(__SWITCH__)
+	Video.FullScreen = true;
+#else
 	Video.FullScreen = (SDL_GetWindowFlags(TheWindow) & SDL_WINDOW_FULLSCREEN_DESKTOP) ? 1 : 0;
+#endif
 	Video.Depth = TheScreen->format->BitsPerPixel;
 
 	// Must not allow SDL to switch to relative mouse coordinates when going
@@ -612,45 +632,116 @@ static bool isTextInput(int key) {
 #if defined(__vita__) || defined(__SWITCH__)
 void HandleTouchEvent(const EventCallback &callbacks, const SDL_TouchFingerEvent& event)
 {
-	// ignore back touchpad
+#if defined(__vita__)
+	// ignore back touchpad on Vita
 	if (event.touchId != 0)
 		return;
+#endif
+
+	static int activeTouches = 0;
+	static uint8_t activeMouseButton = SDL_BUTTON_LEFT;
+	static SDL_FingerID firstFingerId = 0;
+
+	int screenW = 1280;
+	int screenH = 720;
+#if defined(__SWITCH__)
+	if (TheRenderer) {
+		SDL_GetRendererOutputSize(TheRenderer, &screenW, &screenH);
+	}
+#elif defined(__vita__)
+	screenW = VITA_FULLSCREEN_WIDTH;
+	screenH = VITA_FULLSCREEN_HEIGHT;
+#endif
 
 	if (event.type == SDL_FINGERDOWN) {
-		++numTouches;
-		if (numTouches == 1) {
+		++activeTouches;
+		if (activeTouches == 1) {
 			firstFingerId = event.fingerId;
+			activeMouseButton = SDL_BUTTON_LEFT;
+		} else if (activeTouches >= 2) {
+			// 2 fingers down: switch to right click
+			if (activeMouseButton == SDL_BUTTON_LEFT) {
+				SDL_Event ev;
+				SDL_zero(ev);
+				ev.type = SDL_MOUSEBUTTONUP;
+				ev.button.windowID = TheWindow ? SDL_GetWindowID(TheWindow) : 0;
+				ev.button.which = SDL_TOUCH_MOUSEID;
+				ev.button.button = SDL_BUTTON_LEFT;
+				ev.button.state = SDL_RELEASED;
+				ev.button.clicks = 1;
+				ev.button.x = static_cast<int>(emulatedPointerPosX);
+				ev.button.y = static_cast<int>(emulatedPointerPosY);
+				SDL_PushEvent(&ev);
+			}
+			activeMouseButton = SDL_BUTTON_RIGHT;
 		}
 	} else if (event.type == SDL_FINGERUP) {
-		--numTouches;
+		if (activeTouches > 0) {
+			--activeTouches;
+		}
 	}
 
-	if (firstFingerId == event.fingerId) {
-		emulatedPointerPosX =
-			static_cast<float>(VITA_FULLSCREEN_WIDTH * event.x - Video.RenderRect.x) * (static_cast<float>(Video.Width) / Video.RenderRect.w);
-		emulatedPointerPosY = static_cast<float>(VITA_FULLSCREEN_HEIGHT * event.y - Video.RenderRect.y)
-							  * (static_cast<float>(Video.Height) / Video.RenderRect.h);
+	float touchPixelX = event.x * screenW;
+	float touchPixelY = event.y * screenH;
 
-		if (emulatedPointerPosX < 0)
-			emulatedPointerPosX = 0;
-		else if (emulatedPointerPosX >= Video.Width)
-			emulatedPointerPosX = Video.Width - 1;
+	float renderW = (Video.RenderRect.w > 0) ? static_cast<float>(Video.RenderRect.w) : static_cast<float>(Video.Width);
+	float renderH = (Video.RenderRect.h > 0) ? static_cast<float>(Video.RenderRect.h) : static_cast<float>(Video.Height);
 
-		if (emulatedPointerPosY < 0)
-			emulatedPointerPosY = 0;
-		else if (emulatedPointerPosY >= Video.Height)
-			emulatedPointerPosY = Video.Height - 1;
+	float gameX = (touchPixelX - Video.RenderRect.x) * (static_cast<float>(Video.Width) / renderW);
+	float gameY = (touchPixelY - Video.RenderRect.y) * (static_cast<float>(Video.Height) / renderH);
 
-		InputMouseMove(callbacks, SDL_GetTicks(), emulatedPointerPosX, emulatedPointerPosY);
+	if (gameX < 0)
+		gameX = 0;
+	else if (gameX >= Video.Width)
+		gameX = Video.Width - 1;
 
-		if (event.type == SDL_FINGERDOWN || event.type == SDL_FINGERUP) {
-			SDL_Event ev;
-			ev.type = (event.type == SDL_FINGERDOWN) ? SDL_MOUSEBUTTONDOWN : SDL_MOUSEBUTTONUP;
-			ev.button.button = SDL_BUTTON_LEFT;
-			ev.button.x = emulatedPointerPosX;
-			ev.button.y = emulatedPointerPosY;
-			SDL_PushEvent(&ev);
-		}
+	if (gameY < 0)
+		gameY = 0;
+	else if (gameY >= Video.Height)
+		gameY = Video.Height - 1;
+
+	if (firstFingerId == event.fingerId || activeTouches <= 1) {
+		emulatedPointerPosX = gameX;
+		emulatedPointerPosY = gameY;
+
+		InputMouseMove(callbacks, SDL_GetTicks(), static_cast<int>(gameX), static_cast<int>(gameY));
+
+		SDL_Event moveEv;
+		SDL_zero(moveEv);
+		moveEv.type = SDL_MOUSEMOTION;
+		moveEv.motion.windowID = TheWindow ? SDL_GetWindowID(TheWindow) : 0;
+		moveEv.motion.which = SDL_TOUCH_MOUSEID;
+		moveEv.motion.state = (activeTouches > 0) ? (activeMouseButton == SDL_BUTTON_RIGHT ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK) : 0;
+		moveEv.motion.x = static_cast<int>(gameX);
+		moveEv.motion.y = static_cast<int>(gameY);
+		SDL_PushEvent(&moveEv);
+	}
+
+	if (event.type == SDL_FINGERDOWN) {
+		SDL_Event btnEv;
+		SDL_zero(btnEv);
+		btnEv.type = SDL_MOUSEBUTTONDOWN;
+		btnEv.button.windowID = TheWindow ? SDL_GetWindowID(TheWindow) : 0;
+		btnEv.button.which = SDL_TOUCH_MOUSEID;
+		btnEv.button.button = activeMouseButton;
+		btnEv.button.state = SDL_PRESSED;
+		btnEv.button.clicks = 1;
+		btnEv.button.x = static_cast<int>(gameX);
+		btnEv.button.y = static_cast<int>(gameY);
+		SDL_PushEvent(&btnEv);
+	} else if (event.type == SDL_FINGERUP && activeTouches == 0) {
+		SDL_Event btnEv;
+		SDL_zero(btnEv);
+		btnEv.type = SDL_MOUSEBUTTONUP;
+		btnEv.button.windowID = TheWindow ? SDL_GetWindowID(TheWindow) : 0;
+		btnEv.button.which = SDL_TOUCH_MOUSEID;
+		btnEv.button.button = activeMouseButton;
+		btnEv.button.state = SDL_RELEASED;
+		btnEv.button.clicks = 1;
+		btnEv.button.x = static_cast<int>(gameX);
+		btnEv.button.y = static_cast<int>(gameY);
+		SDL_PushEvent(&btnEv);
+		activeMouseButton = SDL_BUTTON_LEFT;
 	}
 }
 
@@ -684,7 +775,7 @@ void ProcessControllerAxisMotion()
     }
 }
 
-void HandleControllerAxisEvent(const SDL_ControllerAxisEvent& motion)
+void HandleControllerAxisEvent(const EventCallback &callbacks, const SDL_ControllerAxisEvent& motion)
 {
     if (motion.axis == SDL_CONTROLLER_AXIS_LEFTX) {
         if (std::abs(motion.value) > CONTROLLER_L_DEADZONE)
@@ -804,6 +895,56 @@ void HandleControllerAxisEvent(const SDL_ControllerAxisEvent& motion)
 		ev.key.keysym.sym = SDLK_UP;
 		SDL_PushEvent(&ev);
 	}
+
+	// ZL - Keyboard P
+	static bool zlPressed = false;
+	if (motion.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
+		bool pressed = (motion.value > 16000);
+		if (pressed != zlPressed) {
+			zlPressed = pressed;
+			if (zlPressed) {
+				InputKeyButtonPress(callbacks, SDL_GetTicks(), SDLK_p, 'p');
+			} else {
+				InputKeyButtonRelease(callbacks, SDL_GetTicks(), SDLK_p, 'p');
+			}
+			if (&callbacks == GetCallbacks()) {
+				SDL_Event ev;
+				SDL_zero(ev);
+				ev.type = zlPressed ? SDL_KEYDOWN : SDL_KEYUP;
+				ev.key.state = zlPressed ? SDL_PRESSED : SDL_RELEASED;
+				ev.key.keysym.mod = KMOD_NONE;
+				ev.key.keysym.scancode = SDL_SCANCODE_P;
+				ev.key.keysym.sym = SDLK_p;
+				SDL_PushEvent(&ev);
+				handleInput(&ev);
+			}
+		}
+	}
+
+	// ZR - Keyboard B
+	static bool zrPressed = false;
+	if (motion.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+		bool pressed = (motion.value > 16000);
+		if (pressed != zrPressed) {
+			zrPressed = pressed;
+			if (zrPressed) {
+				InputKeyButtonPress(callbacks, SDL_GetTicks(), SDLK_b, 'b');
+			} else {
+				InputKeyButtonRelease(callbacks, SDL_GetTicks(), SDLK_b, 'b');
+			}
+			if (&callbacks == GetCallbacks()) {
+				SDL_Event ev;
+				SDL_zero(ev);
+				ev.type = zrPressed ? SDL_KEYDOWN : SDL_KEYUP;
+				ev.key.state = zrPressed ? SDL_PRESSED : SDL_RELEASED;
+				ev.key.keysym.mod = KMOD_NONE;
+				ev.key.keysym.scancode = SDL_SCANCODE_B;
+				ev.key.keysym.sym = SDLK_b;
+				SDL_PushEvent(&ev);
+				handleInput(&ev);
+			}
+		}
+	}
 }
 
 void HandleControllerButtonEvent(const EventCallback &callbacks, const SDL_ControllerButtonEvent& button)
@@ -815,20 +956,20 @@ void HandleControllerButtonEvent(const EventCallback &callbacks, const SDL_Contr
 	SDL_Keycode keycode;
 
     switch (button.button) {
-    case SDL_CONTROLLER_BUTTON_A:
+    case SDL_CONTROLLER_BUTTON_B:
         mousePress = true;
         mouseBtn = SDL_BUTTON_LEFT;
         break;
-    case SDL_CONTROLLER_BUTTON_B:
+    case SDL_CONTROLLER_BUTTON_A:
         mousePress = true;
         mouseBtn = SDL_BUTTON_RIGHT;
         break;
-    case SDL_CONTROLLER_BUTTON_X:
+    case SDL_CONTROLLER_BUTTON_Y:
         keyboardPress = true;
         scancode = SDL_SCANCODE_A;
 		keycode = SDLK_a;
         break;
-    case SDL_CONTROLLER_BUTTON_Y:
+    case SDL_CONTROLLER_BUTTON_X:
         keyboardPress = true;
         scancode = SDL_SCANCODE_S;
 		keycode = SDLK_s;
@@ -1064,7 +1205,7 @@ static void SdlDoEvent(const EventCallback &callbacks, SDL_Event &event)
             }
             break;
         case SDL_CONTROLLERAXISMOTION:
-            HandleControllerAxisEvent(event.caxis);
+            HandleControllerAxisEvent(callbacks, event.caxis);
             break;
         case SDL_CONTROLLERBUTTONDOWN:
         case SDL_CONTROLLERBUTTONUP:

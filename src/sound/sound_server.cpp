@@ -362,6 +362,7 @@ static Mix_Music *LoadMusic(const char *name)
 	if (currentMusic) {
 		StopMusic();
 		Mix_FreeMusic(currentMusic);
+		currentMusic = NULL;
 	}
 	currentMusic = Mix_LoadMUS(name);
 	if (currentMusic) {

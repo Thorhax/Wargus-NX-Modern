@@ -616,10 +616,10 @@ function RunSpeedsMenu()
 
    local keyscrollspeed = {}
    -- slider button to decrease slider value
-   keyscrollspeed = menu:addImageLeftSliderButton("", nil, 21, 196, function() keyscrollspeed:setValue(keyscrollspeed:getValue() - .5); SetMouseScrollSpeed(keyscrollspeed:getValue()) end)
+   keyscrollspeed = menu:addImageLeftSliderButton("", nil, 21, 196, function() keyscrollspeed:setValue(keyscrollspeed:getValue() - .5); SetKeyScrollSpeed(keyscrollspeed:getValue()) end)
 
    -- slider button to decrease slider value
-   keyscrollspeed = menu:addImageRightSliderButton("", nil, 213, 196, function() keyscrollspeed:setValue(keyscrollspeed:getValue() + .5); SetMouseScrollSpeed(keyscrollspeed:getValue()) end)
+   keyscrollspeed = menu:addImageRightSliderButton("", nil, 213, 196, function() keyscrollspeed:setValue(keyscrollspeed:getValue() + .5); SetKeyScrollSpeed(keyscrollspeed:getValue()) end)
 
    -- slider itself
    keyscrollspeed = menu:addImageSlider(1, 10, 172, 18, 41, 196, g_marker, g_slider,
@@ -677,9 +677,10 @@ function BuildVideoOptionsMenu()
    local b
 
    local videoModes = {
-      640, 480,
+      1280, 720,
+      960, 544,
       848, 480,
-      960, 544
+      640, 480
    }
 
    local vlist = {}
@@ -692,7 +693,13 @@ function BuildVideoOptionsMenu()
    menu:addLabel(_("Video Options"), offx + 176, offy + 1 + 26*-2)
    menu:addLabel(_("Video Resolution"), offx + 16, offy + 34 , Fonts["game"], false)
 
-   videoList = menu:addImageListBox(offx + 16, offy + 50, 200, 55, vlist)
+   videoList = menu:addImageListBox(offx + 16, offy + 50, 200, 100, vlist)
+
+   for i=1,table.getn(videoModes)/2 do
+      if (videoModes[i*2-1] == Video.Width and videoModes[i*2] == Video.Height) then
+         videoList:setSelected(i - 1)
+      end
+   end
 
    local function cb(s)
       SetVideoSize(videoModes[videoList:getSelected()*2+1], videoModes[videoList:getSelected()*2+2])

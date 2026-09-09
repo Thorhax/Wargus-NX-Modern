@@ -262,36 +262,43 @@ void CVideo::ClearScreen()
 #if defined(__vita__) || defined(__SWITCH__)
 void CVideo::SetVitaRenderArea()
 {
+	int screenW = 1280;
+	int screenH = 720;
+#if defined(__SWITCH__)
+	if (TheRenderer) {
+		SDL_GetRendererOutputSize(TheRenderer, &screenW, &screenH);
+	}
+#elif defined(__vita__)
+	screenW = VITA_FULLSCREEN_WIDTH;
+	screenH = VITA_FULLSCREEN_HEIGHT;
+#endif
+
 	RenderRect.x = 0;
 	RenderRect.y = 0;
 	RenderRect.w = Width;
 	RenderRect.h = Height;
 
-	if (Width != VITA_FULLSCREEN_WIDTH || Height != VITA_FULLSCREEN_HEIGHT) {
+	if (Width != screenW || Height != screenH) {
 		if (FullScreen) {
-			//resize to fullscreen
-			if (1) {
-				//keep aspect ratio
-				if ((static_cast<float>(VITA_FULLSCREEN_WIDTH) / VITA_FULLSCREEN_HEIGHT)
-					>= (static_cast<float>(Width) / Height)) {
-					float scale = static_cast<float>(VITA_FULLSCREEN_HEIGHT) / Height;
-					RenderRect.w = Width * scale;
-					RenderRect.h = VITA_FULLSCREEN_HEIGHT;
-					RenderRect.x = (VITA_FULLSCREEN_WIDTH - RenderRect.w) / 2;
-				} else {
-					float scale = static_cast<float>(VITA_FULLSCREEN_WIDTH) / Width;
-					RenderRect.w = VITA_FULLSCREEN_WIDTH;
-					RenderRect.h = Height * scale;
-					RenderRect.y = (VITA_FULLSCREEN_HEIGHT - RenderRect.h) / 2;
-				}
+			// resize to fullscreen keeping aspect ratio
+			if ((static_cast<float>(screenW) / screenH)
+				>= (static_cast<float>(Width) / Height)) {
+				float scale = static_cast<float>(screenH) / Height;
+				RenderRect.w = static_cast<int>(Width * scale);
+				RenderRect.h = screenH;
+				RenderRect.x = (screenW - RenderRect.w) / 2;
+				RenderRect.y = 0;
 			} else {
-				RenderRect.w = VITA_FULLSCREEN_WIDTH;
-				RenderRect.h = VITA_FULLSCREEN_HEIGHT;
+				float scale = static_cast<float>(screenW) / Width;
+				RenderRect.w = screenW;
+				RenderRect.h = static_cast<int>(Height * scale);
+				RenderRect.x = 0;
+				RenderRect.y = (screenH - RenderRect.h) / 2;
 			}
 		} else {
-			//center game area
-			RenderRect.x = (VITA_FULLSCREEN_WIDTH - Width) / 2;
-			RenderRect.y = (VITA_FULLSCREEN_HEIGHT - Height) / 2;
+			// center game area
+			RenderRect.x = (screenW - Width) / 2;
+			RenderRect.y = (screenH - Height) / 2;
 		}
 	}
 }
@@ -313,6 +320,7 @@ void CVideo::SetTextInput(bool active)
 */
 bool CVideo::ResizeScreen(int w, int h)
 {
+#if !defined(__vita__) && !defined(__SWITCH__)
 	if (!(SDL_GetWindowFlags(TheWindow) & SDL_WINDOW_FULLSCREEN_DESKTOP)
 		&& Width == WindowWidth
 		&& Height == WindowHeight) {
@@ -325,6 +333,7 @@ bool CVideo::ResizeScreen(int w, int h)
 			SDL_SetWindowSize(TheWindow, w, h);
 		}
 	}
+#endif
 	Width = w;
 	Height = h;
 

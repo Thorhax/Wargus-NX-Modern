@@ -45,16 +45,18 @@ Launch `wargus.nro` from the Homebrew Menu (launch via title override/holding R 
 | --- | --- |
 | **Left Analog Stick** | Move Cursor / Pointer |
 | **Right Analog Stick** | Scroll Map |
-| **A** | Left Mouse Button (Select, Confirm, Order) |
-| **B** | Right Mouse Button (Cancel, Move / Attack order) |
-| **Y** | Attack command |
-| **X** | Stop command |
+| **B** | Left Mouse Button (Select, Confirm, Order) |
+| **A** | Right Mouse Button (Cancel, Move / Attack order) |
+| **Y** | Attack command (`A`) |
+| **X** | Stop command (`S`) |
 | **D-Pad (Up / Right / Down / Left)** | Select Control Group 1, 2, 3, 4 |
-| **L + D-Pad** | Assign Control Group 1, 2, 3, 4 (Ctrl + 1..4) |
-| **R (Hold)** | Fast Cursor Movement / Shift modifier |
-| **Plus (+)** | Escape / In-game Menu |
-| **Minus (-)** | F10 / Options Menu |
-| **Touchscreen** | Direct cursor tap and drag selection |
+| **L** | Ctrl modifier (e.g. hold L + D-Pad to Assign Control Group 1..4) |
+| **R (Hold)** | 2x Fast Cursor Movement / Shift modifier |
+| **ZL** | Patrol command (`P`) |
+| **ZR** | Build command (`B`) |
+| **Plus (+)** | Esc / Main Menu |
+| **Minus (-)** | F10 / Game Options Menu |
+| **Touchscreen** | Direct cursor tap (Left Click), drag selection, 2-finger tap/hold (Right Click) |
 
 ### Preferences
 You can adjust controller pointer speed and bilinear filtering by editing:

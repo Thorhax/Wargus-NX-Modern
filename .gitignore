@@ -44,3 +44,4 @@ pytorchenv
 **/*~
 .*.kate-swp
 .swp.*
+error-logs/

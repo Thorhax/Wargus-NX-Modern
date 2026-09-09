@@ -346,7 +346,6 @@ static void RegisterSwitchCrashHandlers()
 
 void SwitchSetGamePath()
 {
-	printf("[Switch] Detecting game data path...\n");
 	if (access("sdmc:/switch/wargus/campaigns", F_OK) == 0 ||
 	    access("sdmc:/switch/wargus/scripts/wc2-config.lua", F_OK) == 0 ||
 	    access("sdmc:/switch/wargus/scripts/stratagus.lua", F_OK) == 0) {
@@ -363,13 +362,6 @@ void SwitchSetGamePath()
 	} else {
 		StratagusLibPath = "sdmc:/switch/wargus";
 	}
-	printf("[Switch] StratagusLibPath set to: %s\n", StratagusLibPath.c_str());
-
-	std::string wc2cfg = StratagusLibPath + "/scripts/wc2-config.lua";
-	std::string stratlua = StratagusLibPath + "/scripts/stratagus.lua";
-	printf("[Switch] Checking %s: %s\n", wc2cfg.c_str(), access(wc2cfg.c_str(), F_OK) == 0 ? "FOUND" : "NOT FOUND");
-	printf("[Switch] Checking %s: %s\n", stratlua.c_str(), access(stratlua.c_str(), F_OK) == 0 ? "FOUND" : "NOT FOUND");
-	printf("[Switch] Checking romfs:/scripts/stratagus.lua: %s\n", access("romfs:/scripts/stratagus.lua", F_OK) == 0 ? "FOUND" : "NOT FOUND");
 }
 #endif
 
@@ -894,45 +886,12 @@ int stratagusMain(int argc, char **argv)
 	// 2. Ensure directories exist on SD card
 	mkdir("sdmc:/switch", 0777);
 	mkdir("sdmc:/switch/wargus", 0777);
-	mkdir("sdmc:/switch/wargus/logs", 0777);
 
-	// 3. Redirect stdout and stderr to sdmc:/switch/wargus/wargus.log
-	FILE *logFile = freopen("sdmc:/switch/wargus/wargus.log", "w", stdout);
-	if (!logFile) {
-		freopen("sdmc:/wargus.log", "w", stdout);
-	}
-	dup2(fileno(stdout), fileno(stderr));
-	setvbuf(stdout, NULL, _IONBF, 0);
-	setvbuf(stderr, NULL, _IONBF, 0);
-
-	// 4. Try network logging via nxlink if available
-	socketInitializeDefault();
-	nxlinkStdio();
-
-	// 5. Register crash signal handlers
+	// 3. Register crash signal handlers
 	RegisterSwitchCrashHandlers();
 
-	printf("=======================================================\n");
-	printf("===           WARGUS NX MODERN STARTUP              ===\n");
-	printf("=======================================================\n");
-	printf("Build: %s %s\n", __DATE__, __TIME__);
-	printf("Stratagus Version: %s\n", VERSION);
-	char initCwd[1024];
-	if (getcwd(initCwd, sizeof(initCwd))) {
-		printf("Initial CWD: %s\n", initCwd);
-	}
-	for (int i = 0; i < argc; i++) {
-		printf("argv[%d] = %s\n", i, argv[i]);
-	}
-	EnableDebugPrint = true;
-	IsDebugEnabled = true;
-
-	// 6. Early SDL_Init so audio, video, events, timer, controller subsystems are active
-	if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) < 0) {
-		printf("[SDL] Early SDL_Init failed: %s\n", SDL_GetError());
-	} else {
-		printf("[SDL] Early SDL_Init succeeded.\n");
-	}
+	// 4. Early SDL_Init so audio, video, events, timer, controller subsystems are active
+	SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER);
 #endif
 
 	for (int i = 0; i < argc; i++) {

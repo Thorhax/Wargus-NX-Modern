@@ -37,8 +37,12 @@
 
 #include <cstdlib>
 
+#if defined(__SWITCH__)
+#include <tremor/ivorbiscodec.h>
+#else
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
+#endif
 #include <theora/theora.h>
 
 #include "stratagus.h"
@@ -332,6 +336,25 @@ int PlayMovie(const std::string &name)
 	data.File = &f;
 	SDL_Rect rect;
 
+#if defined(__SWITCH__)
+	int screenW = 1280, screenH = 720;
+	if (TheRenderer) {
+		SDL_GetRendererOutputSize(TheRenderer, &screenW, &screenH);
+	}
+	float videoAspect = static_cast<float>(data.tinfo.frame_width) / data.tinfo.frame_height;
+	float screenAspect = static_cast<float>(screenW) / screenH;
+	if (screenAspect >= videoAspect) {
+		rect.h = screenH;
+		rect.w = static_cast<int>(screenH * videoAspect);
+		rect.x = (screenW - rect.w) / 2;
+		rect.y = 0;
+	} else {
+		rect.w = screenW;
+		rect.h = static_cast<int>(screenW / videoAspect);
+		rect.x = 0;
+		rect.y = (screenH - rect.h) / 2;
+	}
+#else
 	if (data.tinfo.frame_width * 300 / 4 > data.tinfo.frame_height * 100) {
 		rect.w = videoWidth;
 		rect.h = videoWidth * data.tinfo.frame_height / data.tinfo.frame_width;
@@ -344,9 +367,10 @@ int PlayMovie(const std::string &name)
 		rect.y = 0;
 	}
 
-#if defined(__vita__) || defined(__SWITCH__)
+#if defined(__vita__)
 	rect.x = (VITA_FULLSCREEN_WIDTH - rect.w) / 2;
 	rect.y = (VITA_FULLSCREEN_HEIGHT - rect.h) / 2;
+#endif
 #endif
 
 	SDL_RenderClear(TheRenderer);
@@ -365,13 +389,15 @@ int PlayMovie(const std::string &name)
 		return 0;
 	}
 
-	// since video's may be longer and should be streamed, we play them as music, but
+	// since videos may be longer and should be streamed, we play them as music, but
 	// use the effects volume for them
-	StopMusic();
 	int prevMusicVolume = GetMusicVolume();
-	SetMusicVolume(GetEffectsVolume());
-	PlayMusic(filename);
-	CallbackMusicDisable(); // do not run the lua callback when the video audio finished
+	if (data.audio) {
+		StopMusic();
+		SetMusicVolume(GetEffectsVolume());
+		PlayMusic(filename);
+		CallbackMusicDisable(); // do not run the lua callback when the video audio finished
+	}
 
 	EventCallback callbacks;
 
@@ -420,10 +446,12 @@ int PlayMovie(const std::string &name)
 		WaitEventsOneFrame();
 	}
 
-	StopMusic();
-	SetMusicVolume(prevMusicVolume);
+	if (data.audio) {
+		StopMusic();
+		SetMusicVolume(prevMusicVolume);
+		CallbackMusicEnable();
+	}
 	SDL_DestroyTexture(yuv_overlay);
-	CallbackMusicEnable();
 
 	OggFree(&data);
 	f.close();

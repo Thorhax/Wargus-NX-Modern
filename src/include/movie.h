@@ -45,7 +45,11 @@
 ----------------------------------------------------------------------------*/
 
 #include "ogg/ogg.h"
+#if defined(__SWITCH__)
+#include <tremor/ivorbiscodec.h>
+#else
 #include "vorbis/codec.h"
+#endif
 #ifdef USE_THEORA
 #include "theora/theora.h"
 #endif

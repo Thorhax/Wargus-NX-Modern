@@ -834,6 +834,17 @@ endif()
 find_package(BZip2)
 find_package(StackTrace)
 find_package(MNG)
+if(SWITCH)
+	# Nintendo Switch uses Tremor (libvorbisidec) via devkitPro switch-sdl2_mixer.
+	# Standard libvorbis/libvorbisfile MUST NOT be linked because their OggVorbis_File
+	# struct size (944 bytes) differs from Tremor's (864 bytes), corrupting SDL2_mixer's
+	# heap structures and causing crashes in OGG_UpdateSection / free.
+	set(VORBIS_INCLUDE_DIR "/opt/devkitpro/portlibs/switch/include/tremor" CACHE PATH "Vorbis include dir" FORCE)
+	set(VORBIS_LIBRARY "vorbisidec" CACHE FILEPATH "Vorbis library" FORCE)
+	set(OGGVORBIS_INCLUDE_DIR "/opt/devkitpro/portlibs/switch/include/tremor;/opt/devkitpro/portlibs/switch/include" CACHE PATH "OggVorbis include dir" FORCE)
+	set(OGGVORBIS_LIBRARIES "ogg;vorbisidec" CACHE STRING "OggVorbis libraries" FORCE)
+	set(OGGVORBIS_FOUND TRUE CACHE BOOL "OggVorbis found" FORCE)
+endif()
 find_package(OggVorbis)
 find_package(Theora)
 
@@ -1037,8 +1048,7 @@ if(SWITCH)
 		jpeg
 		webp
 		theora
-		vorbisfile
-		vorbis
+		vorbisidec
 		ogg
 		modplug
 		mpg123
