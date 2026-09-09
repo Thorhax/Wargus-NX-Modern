@@ -295,20 +295,81 @@ void VitaSetGamePath()
 #endif
 
 #ifdef __SWITCH__
+#include <switch.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <signal.h>
+
+static void SwitchCrashHandler(int sig)
+{
+	fprintf(stderr, "\n=======================================================\n");
+	fprintf(stderr, "*** CRASH DETECTED: Signal %d ***\n", sig);
+	fprintf(stderr, "=======================================================\n");
+	print_backtrace();
+	fflush(stdout);
+	fflush(stderr);
+
+	PrintConsole *console = consoleInit(NULL);
+	printf("\x1b[2J\x1b[1;1H");
+	printf("\n=======================================================\n");
+	printf("                  WARGUS NX CRASHED                    \n");
+	printf("=======================================================\n\n");
+	printf("Fatal Signal caught: %d\n\n", sig);
+	printf("A debug crash log was written to:\n");
+	printf("  sdmc:/switch/wargus/wargus.log\n\n");
+	printf("Press PLUS (+) or (B) to exit to Homebrew Menu.\n");
+	consoleUpdate(NULL);
+
+	padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+	PadState pad;
+	padInitializeDefault(&pad);
+	while (appletMainLoop()) {
+		padUpdate(&pad);
+		u64 kDown = padGetButtonsDown(&pad);
+		if ((kDown & HidNpadButton_Plus) || (kDown & HidNpadButton_B)) {
+			break;
+		}
+		consoleUpdate(NULL);
+	}
+	consoleExit(NULL);
+	exit(sig);
+}
+
+static void RegisterSwitchCrashHandlers()
+{
+	signal(SIGSEGV, SwitchCrashHandler);
+	signal(SIGABRT, SwitchCrashHandler);
+	signal(SIGFPE, SwitchCrashHandler);
+	signal(SIGILL, SwitchCrashHandler);
+	signal(SIGBUS, SwitchCrashHandler);
+}
+
 void SwitchSetGamePath()
 {
-	if (access("sdmc:/switch/wargus/scripts/wc2-config.lua", F_OK) == 0 ||
+	printf("[Switch] Detecting game data path...\n");
+	if (access("sdmc:/switch/wargus/campaigns", F_OK) == 0 ||
+	    access("sdmc:/switch/wargus/scripts/wc2-config.lua", F_OK) == 0 ||
 	    access("sdmc:/switch/wargus/scripts/stratagus.lua", F_OK) == 0) {
 		StratagusLibPath = "sdmc:/switch/wargus";
+	} else if (access("sdmc:/switch/Wargus/campaigns", F_OK) == 0 ||
+	           access("sdmc:/switch/Wargus/scripts/wc2-config.lua", F_OK) == 0) {
+		StratagusLibPath = "sdmc:/switch/Wargus";
 	} else if (access("sdmc:/switch/war1gus/scripts/wc1-config.lua", F_OK) == 0) {
 		StratagusLibPath = "sdmc:/switch/war1gus";
 	} else if (access("data/scripts/wc2-config.lua", F_OK) == 0 ||
-	           access("scripts/wc2-config.lua", F_OK) == 0) {
+	           access("scripts/wc2-config.lua", F_OK) == 0 ||
+	           access("campaigns", F_OK) == 0) {
 		StratagusLibPath = ".";
 	} else {
 		StratagusLibPath = "sdmc:/switch/wargus";
 	}
+	printf("[Switch] StratagusLibPath set to: %s\n", StratagusLibPath.c_str());
+
+	std::string wc2cfg = StratagusLibPath + "/scripts/wc2-config.lua";
+	std::string stratlua = StratagusLibPath + "/scripts/stratagus.lua";
+	printf("[Switch] Checking %s: %s\n", wc2cfg.c_str(), access(wc2cfg.c_str(), F_OK) == 0 ? "FOUND" : "NOT FOUND");
+	printf("[Switch] Checking %s: %s\n", stratlua.c_str(), access(stratlua.c_str(), F_OK) == 0 ? "FOUND" : "NOT FOUND");
+	printf("[Switch] Checking romfs:/scripts/stratagus.lua: %s\n", access("romfs:/scripts/stratagus.lua", F_OK) == 0 ? "FOUND" : "NOT FOUND");
 }
 #endif
 
@@ -524,14 +585,47 @@ void ExitFatal(int err)
 	print_backtrace();
 #endif
 
+	fprintf(stderr, "\n[FATAL ERROR] ExitFatal called with code %d\n", err);
+	fflush(stdout);
+	fflush(stderr);
+
 #ifdef __SWITCH__
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-							"Wargus Initialization Error",
-							"Wargus requires extracted Warcraft II game data.\n"
-							"Please copy your game data files to /switch/wargus/\n"
-							"(or /switch/war1gus/ for Warcraft I).\n"
-							"See instructions at https://github.com/Thorhax/Wargus-NX-Modern",
-							NULL);
+	PrintConsole *console = consoleInit(NULL);
+	printf("\x1b[2J\x1b[1;1H");
+	printf("\n=======================================================\n");
+	printf("           WARGUS NX - INITIALIZATION ERROR            \n");
+	printf("=======================================================\n\n");
+	printf("Wargus failed to load required game data files!\n\n");
+	printf("Checked Game Path:\n  %s\n\n", StratagusLibPath.c_str());
+	printf("Please verify that you have copied your Warcraft II\n");
+	printf("extracted data into:\n");
+	printf("  sdmc:/switch/wargus/\n\n");
+	printf("Required folders:\n");
+	printf("  - campaigns/\n");
+	printf("  - graphics/\n");
+	printf("  - maps/\n");
+	printf("  - music/\n");
+	printf("  - sounds/\n");
+	printf("  - videos/\n");
+	printf("  - scripts/wc2-config.lua\n\n");
+	printf("A debug log with full details was saved to:\n");
+	printf("  sdmc:/switch/wargus/wargus.log\n\n");
+	printf("Press PLUS (+) or (B) to exit to Homebrew Menu.\n");
+	consoleUpdate(NULL);
+
+	padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+	PadState pad;
+	padInitializeDefault(&pad);
+	while (appletMainLoop()) {
+		padUpdate(&pad);
+		u64 kDown = padGetButtonsDown(&pad);
+		if ((kDown & HidNpadButton_Plus) || (kDown & HidNpadButton_B)) {
+			break;
+		}
+		consoleUpdate(NULL);
+	}
+	consoleExit(NULL);
+	exit(err);
 #endif
 #ifdef __vita__
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
@@ -793,6 +887,54 @@ static LONG WINAPI CreateDumpFile(EXCEPTION_POINTERS *ExceptionInfo)
 */
 int stratagusMain(int argc, char **argv)
 {
+#ifdef __SWITCH__
+	// 1. Initialize RomFS
+	romfsInit();
+
+	// 2. Ensure directories exist on SD card
+	mkdir("sdmc:/switch", 0777);
+	mkdir("sdmc:/switch/wargus", 0777);
+	mkdir("sdmc:/switch/wargus/logs", 0777);
+
+	// 3. Redirect stdout and stderr to sdmc:/switch/wargus/wargus.log
+	FILE *logFile = freopen("sdmc:/switch/wargus/wargus.log", "w", stdout);
+	if (!logFile) {
+		freopen("sdmc:/wargus.log", "w", stdout);
+	}
+	dup2(fileno(stdout), fileno(stderr));
+	setvbuf(stdout, NULL, _IONBF, 0);
+	setvbuf(stderr, NULL, _IONBF, 0);
+
+	// 4. Try network logging via nxlink if available
+	socketInitializeDefault();
+	nxlinkStdio();
+
+	// 5. Register crash signal handlers
+	RegisterSwitchCrashHandlers();
+
+	printf("=======================================================\n");
+	printf("===           WARGUS NX MODERN STARTUP              ===\n");
+	printf("=======================================================\n");
+	printf("Build: %s %s\n", __DATE__, __TIME__);
+	printf("Stratagus Version: %s\n", VERSION);
+	char initCwd[1024];
+	if (getcwd(initCwd, sizeof(initCwd))) {
+		printf("Initial CWD: %s\n", initCwd);
+	}
+	for (int i = 0; i < argc; i++) {
+		printf("argv[%d] = %s\n", i, argv[i]);
+	}
+	EnableDebugPrint = true;
+	IsDebugEnabled = true;
+
+	// 6. Early SDL_Init so audio, video, events, timer, controller subsystems are active
+	if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) < 0) {
+		printf("[SDL] Early SDL_Init failed: %s\n", SDL_GetError());
+	} else {
+		printf("[SDL] Early SDL_Init succeeded.\n");
+	}
+#endif
+
 	for (int i = 0; i < argc; i++) {
 		OriginalArgv.push_back(std::string(argv[i]));
 	}
@@ -902,11 +1044,36 @@ int stratagusMain(int argc, char **argv)
 
 		Exit(0);
 	} catch (const std::exception &e) {
-		fprintf(stderr, "Stratagus crashed!\n");
-		fprintf(stderr, "Please send this call stack to our bug tracker: https://github.com/Wargus/stratagus/issues\n");
-		fprintf(stderr, "and tell us what caused this bug to occur.\n");
-		fprintf(stderr, " === exception state traceback === \n");
-		fprintf(stderr, "%s", e.what());
+		fprintf(stderr, "\n=======================================================\n");
+		fprintf(stderr, "Stratagus crashed with exception: %s\n", e.what());
+		fprintf(stderr, "=======================================================\n");
+		fflush(stdout);
+		fflush(stderr);
+#ifdef __SWITCH__
+		PrintConsole *console = consoleInit(NULL);
+		printf("\x1b[2J\x1b[1;1H");
+		printf("\n=======================================================\n");
+		printf("               WARGUS NX - EXCEPTION                   \n");
+		printf("=======================================================\n\n");
+		printf("Exception: %s\n\n", e.what());
+		printf("Debug log written to:\n");
+		printf("  sdmc:/switch/wargus/wargus.log\n\n");
+		printf("Press PLUS (+) or (B) to exit to Homebrew Menu.\n");
+		consoleUpdate(NULL);
+
+		padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+		PadState pad;
+		padInitializeDefault(&pad);
+		while (appletMainLoop()) {
+			padUpdate(&pad);
+			u64 kDown = padGetButtonsDown(&pad);
+			if ((kDown & HidNpadButton_Plus) || (kDown & HidNpadButton_B)) {
+				break;
+			}
+			consoleUpdate(NULL);
+		}
+		consoleExit(NULL);
+#endif
 		exit(1);
 	}
 	return 0;

@@ -667,6 +667,9 @@ bool SoundEnabled()
 */
 static int InitSdlSound()
 {
+	if (SDL_WasInit(SDL_INIT_AUDIO) == 0) {
+		SDL_InitSubSystem(SDL_INIT_AUDIO);
+	}
 	// just activate everything we can by setting all bits
 	Mix_Init(std::numeric_limits<unsigned int>::max());
 	if (Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 1024)) {

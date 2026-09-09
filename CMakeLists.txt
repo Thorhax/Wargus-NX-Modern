@@ -1530,5 +1530,6 @@ if(SWITCH)
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/wargus.nro"
         NACP "${CMAKE_CURRENT_BINARY_DIR}/wargus.nacp"
         ICON "${CMAKE_CURRENT_SOURCE_DIR}/switch_icon.png"
+        ROMFS "${CMAKE_CURRENT_SOURCE_DIR}/romfs"
     )
 endif()

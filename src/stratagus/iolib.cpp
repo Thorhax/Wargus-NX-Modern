@@ -747,6 +747,11 @@ static void LibraryFileName(const char *file, char(&buffer)[PATH_MAX])
 	if (*buffer == '/') {
 		return;
 	}
+#ifdef __SWITCH__
+	if (strncmp(buffer, "sdmc:/", 6) == 0 || strncmp(buffer, "romfs:/", 7) == 0) {
+		return;
+	}
+#endif
 	if (FindFileWithExtension(buffer)) {
 		return;
 	}
@@ -825,6 +830,22 @@ static void LibraryFileName(const char *file, char(&buffer)[PATH_MAX])
 		return;
 	}
 
+#ifdef __SWITCH__
+	// Fall back to romfs for built-in scripts and resources
+	sprintf(buffer, "romfs:/%s", file);
+	if (FindFileWithExtension(buffer)) {
+		return;
+	}
+	sprintf(buffer, "romfs:/scripts/%s", file);
+	if (FindFileWithExtension(buffer)) {
+		return;
+	}
+	sprintf(buffer, "romfs:/contrib/%s", file);
+	if (FindFileWithExtension(buffer)) {
+		return;
+	}
+#endif
+
 	DebugPrint("File '%s' not found\n" _C_ file);
 	strcpy_s(buffer, PATH_MAX, file);
 }
@@ -838,6 +859,8 @@ extern std::string LibraryFileName(const char *file)
 		LibraryFileName(file, buffer);
 		std::string r(buffer);
 		FileNameMap[file] = r;
+		printf("[IO] LibraryFileName('%s') -> '%s' (%s)\n",
+		       file, r.c_str(), access(r.c_str(), R_OK) == 0 ? "EXISTS" : "NOT_FOUND");
 		return r;
 	} else {
 		return result->second;

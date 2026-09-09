@@ -269,7 +269,11 @@ int LuaLoadFile(const std::string &file, const std::string &strArg, bool exitOnE
 	const int status = luaL_loadbuffer(Lua, content.c_str(), content.size(), file.c_str());
 
 	if (!status) {
+#ifdef __SWITCH__
+		lua_pushstring(Lua, file.c_str());
+#else
 		lua_pushstring(Lua, fs::absolute(fs::path(file)).generic_u8string().c_str());
+#endif
 		lua_setglobal(Lua, "__file__");
 		if (!strArg.empty()) {
 			lua_pushstring(Lua, strArg.c_str());
@@ -2536,7 +2540,9 @@ void LoadCcl(const std::string &filename, const std::string &luaArgStr)
 	//  Load and evaluate configuration file
 	CclInConfigFile = 1;
 	const std::string name = LibraryFileName(filename.c_str());
+	printf("[Script] LoadCcl: resolved '%s' to '%s'\n", filename.c_str(), name.c_str());
 	if (access(name.c_str(), R_OK)) {
+		fprintf(stderr, "[Script] FATAL: Cannot access script '%s'!\n", name.c_str());
 		fprintf(stderr, "Maybe you need to specify another gamepath with '-d /path/to/datadir'?\n");
 		ExitFatal(-1);
 	}

@@ -381,6 +381,13 @@ void InitVideoSdl()
 
 		// Clean up on exit
 		atexit(SDL_Quit);
+	}
+
+	static bool inputSetupDone = false;
+	if (!inputSetupDone) {
+		inputSetupDone = true;
+		SDL_CUSTOM_KEY_UP = SDL_RegisterEvents(1);
+		SDL_StartTextInput();
 
 		// If debug is enabled, Stratagus disable SDL Parachute.
 		// So we need gracefully handle segfaults and aborts.
@@ -389,9 +396,9 @@ void InitVideoSdl()
 		signal(SIGABRT, CleanExit);
 #endif
 #if defined(__vita__) || defined(__SWITCH__)
-	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
-	SDL_Init(SDL_INIT_GAMECONTROLLER);
-	OpenController();
+		SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+		SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+		OpenController();
 #endif
 	}
 
