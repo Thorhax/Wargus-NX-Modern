@@ -93,9 +93,7 @@ static int CclSetControllerSpeed(lua_State *l)
 static int CclSetBilinearFilter(lua_State *l)
 {
 	LuaCheckArgs(l, 1);
-	if (CclInConfigFile) {
-		Video.BilinearFilter = LuaToBoolean(l, 1);
-	}
+	Video.BilinearFilter = LuaToBoolean(l, 1);
 	return 0;
 }
 #endif

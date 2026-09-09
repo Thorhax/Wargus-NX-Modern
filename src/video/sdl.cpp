@@ -413,8 +413,8 @@ void InitVideoSdl()
 	Video.WindowWidth = 1280;
 	Video.WindowHeight = 720;
 	if (!Video.Width || !Video.Height) {
-		Video.Width = 1280;
-		Video.Height = 720;
+		Video.Width = 640;
+		Video.Height = 480;
 	}
 	flags |= SDL_WINDOW_FULLSCREEN;
 #else

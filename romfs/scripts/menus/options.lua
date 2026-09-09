@@ -677,10 +677,10 @@ function BuildVideoOptionsMenu()
    local b
 
    local videoModes = {
+      640, 480,
       1280, 720,
       960, 544,
-      848, 480,
-      640, 480
+      848, 480
    }
 
    local vlist = {}
@@ -706,6 +706,16 @@ function BuildVideoOptionsMenu()
       menu:stop(1)
    end
    videoList:setActionCallback(cb)
+
+   local bFilter = menu:addImageCheckBox(_("Bilinear Filter"), offx + 17, offy + 165, offi, offi2, oni, oni2,
+			     function()
+				wc2.preferences.BilinearFilter = not wc2.preferences.BilinearFilter
+				SetBilinearFilter(wc2.preferences.BilinearFilter)
+				Video:ResizeScreen(Video.Width, Video.Height)
+				SavePreferences()
+				menu:stop(1)
+   end)
+   bFilter:setMarked(wc2.preferences.BilinearFilter)
 
    b = menu:addImageCheckBox(_("Full Screen"), offx + 17, offy + 55 + 26*7 + 14, offi, offi2, oni, oni2,
 			     function()

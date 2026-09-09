@@ -426,8 +426,8 @@ local defaultPreferences = {
 	TipNumber = 0,
 	UseFancyBuildings = false,      --  Enable/disable fancy building (random mirroring buildings)
 	VideoFullScreen = true,
-	VideoHeight = 720,
-	VideoWidth = 1280,
+	VideoHeight = 480,
+	VideoWidth = 640,
 	VideoShader = "none",
 	ViewportMode = 0,
 	ServerList = {},
@@ -438,8 +438,7 @@ local defaultPreferences = {
   FogOfWarBilinear = false,     -- Enable/Disable bilinear filtration for fog of war
   MapGrid = false,
   ControllerSpeed = 10,
-  BilinearFilter = false,
-  Migrated720p = true
+  BilinearFilter = true
 }
 
 --- Skirmish Setup --------------
@@ -460,13 +459,6 @@ if (wc2.preferences.ServerList == nil) then
 end
 
 CompleteMissingValues(wc2.preferences, defaultPreferences)
-
-if (wc2.preferences.VideoWidth == 640 and wc2.preferences.VideoHeight == 480 and not wc2.preferences.Migrated720p) then
-	wc2.preferences.VideoWidth = 1280
-	wc2.preferences.VideoHeight = 720
-	wc2.preferences.Migrated720p = true
-end
-
 SavePreferences()
 
 InitFuncs:add(function()
